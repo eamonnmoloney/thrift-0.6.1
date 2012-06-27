@@ -1,0 +1,12 @@
+#! /bin/sh
+#
+# Created by configure
+
+'./configure' \
+'--disable-option-checking' \
+'--prefix=/usr/local' \
+'--without-cpp' \
+'--without-python' \
+'--cache-file=/dev/null' \
+'--srcdir=.' \
+"$@"
