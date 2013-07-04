@@ -187,6 +187,7 @@ class t_cocoa_generator : public t_oop_generator {
   std::string call_field_setter(t_field* tfield, std::string fieldName);
   std::string containerize(t_type * ttype, std::string fieldName);
   std::string decontainerize(t_field * tfield, std::string fieldName);
+  std::string containerized_name(t_type* ttype);
 
   bool type_can_be_null(t_type* ttype) {
     ttype = get_true_type(ttype);
@@ -1801,6 +1802,34 @@ string t_cocoa_generator::containerize(t_type * ttype,
   return fieldName;
 }
 
+/**
+ * Returns the containerized classname for a type, or original typename if containerization is not required.
+ *
+ * @param ttype The type to get the container classname for
+ */
+string t_cocoa_generator::containerized_name(t_type* ttype){
+  ttype = get_true_type(ttype);
+  if (ttype->is_enum()) {
+    return "NSNumber*";
+  } else if (ttype->is_base_type()) {
+    t_base_type::t_base tbase = ((t_base_type*)ttype)->get_base();
+    switch (tbase) {
+      case t_base_type::TYPE_BOOL:
+      case t_base_type::TYPE_BYTE:
+      case t_base_type::TYPE_I16:
+      case t_base_type::TYPE_I32:
+      case t_base_type::TYPE_I64:
+      case t_base_type::TYPE_DOUBLE:
+        return "NSNumber*";
+      default:
+        break;
+    }
+  }
+  
+  //return the normal typename
+  return type_name(ttype);
+}
+
 
 /**
  * Generates code to deserialize a map element
@@ -2330,13 +2359,22 @@ string t_cocoa_generator::declare_field(t_field* tfield) {
 string t_cocoa_generator::declare_property(t_field* tfield) {
   std::ostringstream render;
   render << "@property (nonatomic, ";
+  
+  t_type *field_type = tfield->get_type();
 
-  if (type_can_be_null(tfield->get_type()))
+  if (type_can_be_null(field_type))
     render << "retain, ";
   
   render << "getter=" << decapitalize(tfield->get_name()) <<
     ", setter=set" << capitalize(tfield->get_name()) + ":) " <<
-    type_name(tfield->get_type()) << " " << tfield->get_name() << ";";
+    type_name(field_type) << " " << tfield->get_name() << ";";
+  
+  if (field_type->is_map())
+    render << " //  <" << containerized_name(field_type->get_key_type()) << "," <<
+    containerized_name(field_type->get_val_type()) << ">";
+    
+  if (field_type->is_set() || field_type->is_list())
+    render << " //  <" << containerized_name(field_type->get_elem_type()) << ">";
 
   return render.str();
 }

@@ -62,6 +62,10 @@ class t_type : public t_doc {
   virtual bool is_map()       const { return false; }
   virtual bool is_service()   const { return false; }
 
+  virtual t_type* get_key_type()   const { return NULL; }
+  virtual t_type* get_elem_type()  const { return NULL; }
+  virtual t_type* get_val_type()   const { return NULL; }
+
   t_program* get_program() {
     return program_;
   }
